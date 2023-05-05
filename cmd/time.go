@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/fatih/color"
+	"github.com/golang-module/carbon/v2"
 	"github.com/logrusorgru/aurora"
 	"github.com/rodaine/table"
 	"github.com/spf13/cobra"
@@ -37,20 +38,13 @@ var timeCmd = &cobra.Command{
 func toTime(value string) time.Time {
 	switch value {
 	case "now":
-		return time.Now()
+		return carbon.Now().ToStdTime()
 	case "today":
-		y, m, d := time.Now().Date()
-		return time.Date(y, m, d, 0, 0, 0, 0, time.Local)
+		return carbon.Now().StartOfDay().ToStdTime()
 	case "tomorrow":
-		y, m, d := time.Now().Add(time.Hour * 24).Date()
-		return time.Date(y, m, d, 0, 0, 0, 0, time.Local)
+		return carbon.Tomorrow().ToStdTime()
 	default:
-		dt, err := time.ParseInLocation(time.DateTime, value, time.Local)
-		if err != nil {
-			fmt.Println(aurora.Red(err))
-			os.Exit(1)
-		}
-		return dt
+		return carbon.Parse(value).ToStdTime()
 	}
 }
 
