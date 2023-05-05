@@ -51,7 +51,7 @@ func toTime(value string) time.Time {
 func dump(val string) {
 	var dt time.Time
 	if ts, err := strconv.ParseInt(val, 10, 64); err == nil {
-		dt = time.Unix(ts, 0)
+		dt = carbon.CreateFromTimestamp(ts).ToStdTime()
 	} else {
 		dt = toTime(val)
 	}
