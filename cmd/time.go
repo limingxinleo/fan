@@ -26,7 +26,7 @@ var timeCmd = &cobra.Command{
 		in := bufio.NewReader(os.Stdin)
 		scanner := bufio.NewScanner(in)
 		for true {
-			fmt.Println(aurora.Blue("Please Input TimeStamp or Datetime:"))
+			fmt.Println(aurora.Yellow("Please Input TimeStamp or Datetime:"))
 			scanner.Scan()
 			t = string(scanner.Bytes())
 			dump(t)
