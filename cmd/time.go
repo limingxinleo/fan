@@ -38,6 +38,12 @@ func toTime(value string) time.Time {
 	switch value {
 	case "now":
 		return time.Now()
+	case "today":
+		y, m, d := time.Now().Date()
+		return time.Date(y, m, d, 0, 0, 0, 0, time.Local)
+	case "tomorrow":
+		y, m, d := time.Now().Add(time.Hour * 24).Date()
+		return time.Date(y, m, d, 0, 0, 0, 0, time.Local)
 	default:
 		dt, err := time.ParseInLocation(time.DateTime, value, time.Local)
 		if err != nil {
