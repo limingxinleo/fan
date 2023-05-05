@@ -34,14 +34,12 @@ var timeCmd = &cobra.Command{
 	},
 }
 
-var zone = time.FixedZone("CST", 8*3600)
-
 func dump(val string) {
 	var dt time.Time
 	if ts, err := strconv.ParseInt(val, 10, 64); err == nil {
 		dt = time.Unix(ts, 0)
 	} else {
-		dt, err = time.ParseInLocation(time.DateTime, val, zone)
+		dt, err = time.ParseInLocation(time.DateTime, val, time.Local)
 		if err != nil {
 			fmt.Println(aurora.Red(err))
 			os.Exit(1)
