@@ -34,16 +34,26 @@ var timeCmd = &cobra.Command{
 	},
 }
 
+func toTime(value string) time.Time {
+	switch value {
+	case "now":
+		return time.Now()
+	default:
+		dt, err := time.ParseInLocation(time.DateTime, value, time.Local)
+		if err != nil {
+			fmt.Println(aurora.Red(err))
+			os.Exit(1)
+		}
+		return dt
+	}
+}
+
 func dump(val string) {
 	var dt time.Time
 	if ts, err := strconv.ParseInt(val, 10, 64); err == nil {
 		dt = time.Unix(ts, 0)
 	} else {
-		dt, err = time.ParseInLocation(time.DateTime, val, time.Local)
-		if err != nil {
-			fmt.Println(aurora.Red(err))
-			os.Exit(1)
-		}
+		dt = toTime(val)
 	}
 
 	tbl := table.New("TimeStamp", "DateTime")
