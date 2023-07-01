@@ -41,7 +41,7 @@ var downloadM3u8 = &cobra.Command{
 			os.Exit(1)
 		}
 
-		f, err := os.OpenFile(dir+"/index.txt", os.O_WRONLY|os.O_CREATE, os.ModePerm)
+		f, err := os.OpenFile(dir+"/index.txt", os.O_RDWR|os.O_CREATE, os.ModePerm)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
