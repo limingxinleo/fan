@@ -63,6 +63,7 @@ var downloadM3u8 = &cobra.Command{
 			url := string(line)
 
 			if strings.HasPrefix(url, "http") {
+				fmt.Println(url)
 				arr := strings.Split(url, "/")
 				file := arr[len(arr)-1]
 
@@ -77,7 +78,7 @@ var downloadM3u8 = &cobra.Command{
 	},
 }
 
-func download(url string, path string) {
+func download(url string, path string) int64 {
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, os.ModePerm)
 	if err != nil {
 		fmt.Println(err)
@@ -94,7 +95,14 @@ func download(url string, path string) {
 
 	defer r.Body.Close()
 
-	io.Copy(f, r.Body)
+	written, err := io.Copy(f, r.Body)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	fmt.Println(written)
+	return written
 }
 
 func init() {
