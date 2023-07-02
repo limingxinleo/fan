@@ -18,6 +18,16 @@ type OssConfig struct {
 	AccessKeySecret string `json:"access_key_secret"`
 }
 
+func SetConfig(cmd *cobra.Command, config *Config) {
+	path, err := cmd.Flags().GetString("config")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	InitConfig(path, config)
+}
+
 func GetConfig(cmd *cobra.Command) *Config {
 	path, err := cmd.Flags().GetString("config")
 	if err != nil {
@@ -27,7 +37,7 @@ func GetConfig(cmd *cobra.Command) *Config {
 
 	bf, err := os.ReadFile(path)
 	if err != nil {
-		return InitConfig(path)
+		return InitConfig(path, nil)
 	}
 
 	c := &Config{}
@@ -40,17 +50,18 @@ func GetConfig(cmd *cobra.Command) *Config {
 	return c
 }
 
-func InitConfig(path string) *Config {
+func InitConfig(path string, config *Config) *Config {
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 	if err != nil {
-		fmt.Println(123123)
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	w := bufio.NewWriter(f)
 
-	config := &Config{}
+	if config == nil {
+		config = &Config{}
+	}
 
 	bt, err := json.Marshal(config)
 	if err != nil {

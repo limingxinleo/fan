@@ -6,6 +6,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fatih/color v1.15.0 h1:kOqh6YHBtK8aywxGerMG2Eq3H6Qgoqeo13Bk2Mv/nBs=
 github.com/fatih/color v1.15.0/go.mod h1:0h5ZqXfHYED7Bhv2ZJamyIOUej9KtShiJESRwBDUSsw=
+github.com/gobeam/stringy v0.0.6 h1:IboItevQArUAYUbjb7xmtGoJfN5Aqpk3/bVCd7JgWe0=
+github.com/gobeam/stringy v0.0.6/go.mod h1:W3620X9dJHf2FSZF5fRnWekHcHQjwmCz8ZQ2d1qloqE=
 github.com/golang-module/carbon/v2 v2.2.3 h1:WvGIc5+qzq9drNzH+Gnjh1TZ0JgDY/IA+m2Dvk7Qm4Q=
 github.com/golang-module/carbon/v2 v2.2.3/go.mod h1:LdzRApgmDT/wt0eNT8MEJbHfJdSqCtT46uZhfF30dqI=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
