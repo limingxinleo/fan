@@ -16,6 +16,8 @@ type OssConfig struct {
 	Endpoint        string `json:"endpoint"`
 	AccessKeyId     string `json:"access_key_id"`
 	AccessKeySecret string `json:"access_key_secret"`
+	Bucket          string `json:"bucket"`
+	BaseUri         string `json:"base_uri"`
 }
 
 func SetConfig(cmd *cobra.Command, config *Config) {

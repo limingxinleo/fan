@@ -2,10 +2,15 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/golang-module/carbon/v2"
+	"github.com/google/uuid"
+	"github.com/limingxinleo/fan/config"
 	"github.com/logrusorgru/aurora"
-	"os"
-
 	"github.com/spf13/cobra"
+	"os"
+	"path"
+	"strings"
 )
 
 // ossUploaderCmd represents the ossUploader command
@@ -19,8 +24,29 @@ var ossUploaderCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		path := args[0]
-		stat, err := os.Stat(path)
+		file := args[0]
+		cf := config.GetConfig(cmd)
+		bucket, err := cmd.Flags().GetString("bucket")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		if bucket != "" {
+			cf.OssConfig.Bucket = bucket
+		}
+
+		if cf.OssConfig.BaseUri == "" {
+			cf.OssConfig.BaseUri = "https://" + cf.OssConfig.Bucket + "." + cf.OssConfig.Endpoint
+		}
+
+		stat, err := os.Stat(file)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		client, err := oss.New(cf.OssConfig.Endpoint, cf.OssConfig.AccessKeyId, cf.OssConfig.AccessKeySecret)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -29,13 +55,43 @@ var ossUploaderCmd = &cobra.Command{
 		if stat.IsDir() {
 			fmt.Println("是目录")
 		} else {
-			fmt.Println("是文件")
+			target, err := cmd.Flags().GetString("target")
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			uploadToOss(client, &cf.OssConfig, file, target)
 		}
 	},
+}
+
+func uploadToOss(client *oss.Client, cf *config.OssConfig, file string, target string) {
+	extension := path.Ext(file)
+	bucket, err := client.Bucket(cf.Bucket)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if target == "" {
+		name := uuid.New().String()
+		target = path.Join(carbon.Now().Format("Y/m/d"), name) + extension
+	}
+
+	err = bucket.PutObjectFromFile(target, file)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	url := strings.TrimSuffix(cf.BaseUri, "/") + "/" + target
+	fmt.Println(url)
 }
 
 func init() {
 	rootCmd.AddCommand(ossUploaderCmd)
 
 	ossUploaderCmd.Flags().StringP("target", "t", "", "上传路径")
+	ossUploaderCmd.Flags().StringP("bucket", "b", "", "OSS Bucket")
 }
