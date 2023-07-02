@@ -21,7 +21,7 @@ var timeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var t string
 		if len(args) != 0 {
-			dump(args[0])
+			dumpTime(args[0])
 		}
 
 		in := bufio.NewReader(os.Stdin)
@@ -30,7 +30,7 @@ var timeCmd = &cobra.Command{
 			fmt.Println(aurora.Yellow("Please Input TimeStamp or Datetime:"))
 			scanner.Scan()
 			t = string(scanner.Bytes())
-			dump(t)
+			dumpTime(t)
 		}
 	},
 }
@@ -48,7 +48,7 @@ func toTime(value string) time.Time {
 	}
 }
 
-func dump(val string) {
+func dumpTime(val string) {
 	var dt time.Time
 	if ts, err := strconv.ParseInt(val, 10, 64); err == nil {
 		dt = carbon.CreateFromTimestamp(ts).ToStdTime()
