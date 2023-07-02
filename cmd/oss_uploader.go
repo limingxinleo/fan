@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -52,15 +53,41 @@ var ossUploaderCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		target, err := cmd.Flags().GetString("target")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
 		if stat.IsDir() {
-			fmt.Println("是目录")
-		} else {
-			target, err := cmd.Flags().GetString("target")
+			if target == "" {
+				fmt.Println(aurora.Yellow("上传目录必须通过 -t 指定上传目录."))
+				os.Exit(1)
+			}
+			var files []string
+			err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
+				files = append(files, path)
+				return nil
+			})
+
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
 
+			for _, s := range files {
+				stat, err = os.Stat(s)
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+
+				if !stat.IsDir() {
+					t := strings.TrimSuffix(target, "/") + strings.Replace(s, file, "", 1)
+					uploadToOss(client, &cf.OssConfig, s, t)
+				}
+			}
+		} else {
 			uploadToOss(client, &cf.OssConfig, file, target)
 		}
 	},
