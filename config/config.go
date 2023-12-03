@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	OssConfig OssConfig `json:"oss_config"`
+	PdfConfig PdfConfig `json:"pdf_config"`
 }
 
 type OssConfig struct {
@@ -18,6 +19,10 @@ type OssConfig struct {
 	AccessKeySecret string `json:"access_key_secret"`
 	Bucket          string `json:"bucket"`
 	BaseUri         string `json:"base_uri"`
+}
+
+type PdfConfig struct {
+	MeteredKey string `json:"metered_key"`
 }
 
 func SetConfig(cmd *cobra.Command, config *Config) {
