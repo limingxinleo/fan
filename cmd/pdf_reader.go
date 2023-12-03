@@ -3,11 +3,14 @@ package cmd
 import (
 	"fmt"
 	"github.com/limingxinleo/fan/config"
+	"github.com/logrusorgru/aurora"
+	"github.com/shopspring/decimal"
 	"github.com/spf13/cobra"
 	"github.com/unidoc/unipdf/v3/common/license"
 	"github.com/unidoc/unipdf/v3/extractor"
 	"github.com/unidoc/unipdf/v3/model"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -23,6 +26,8 @@ var pdfInvoiceCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		var invoices = []string{}
+
 		for i := 0; i < len(args); i++ {
 			path := args[i]
 			dir, err := os.ReadDir(path)
@@ -35,17 +40,23 @@ var pdfInvoiceCmd = &cobra.Command{
 				if !fi.IsDir() {
 					filename := path + "/" + fi.Name()
 					if strings.HasSuffix(filename, ".pdf") {
-						fmt.Println(filename)
-						readInvoice(filename)
-						os.Exit(0)
+						invoices = append(invoices, readInvoice(filename))
 					}
 				}
 			}
 		}
+
+		result := decimal.New(0, 0)
+		for _, invoice := range invoices {
+			d2, _ := decimal.NewFromString(invoice)
+			result = result.Add(d2)
+		}
+
+		fmt.Println(aurora.Blue("当前目录内发票金额总额为 " + result.String()))
 	},
 }
 
-func readInvoice(path string) float32 {
+func readInvoice(path string) string {
 	opt := model.NewReaderOpts()
 	reader, f, err := model.NewPdfReaderFromFile(path, opt)
 	if err != nil {
@@ -67,10 +78,15 @@ func readInvoice(path string) float32 {
 		os.Exit(1)
 	}
 
-	fmt.Println(text)
-	fmt.Println(path)
+	//fmt.Println(text)
+	// 价税合计(大写)           贰拾贰圆整 (小写)¥22.00
+	r, _ := regexp.Compile(`小写.*`)
+	res := r.FindString(text)
 
-	return 1
+	r2, _ := regexp.Compile(`\d+\.\d+`)
+	result := r2.FindString(res)
+
+	return result
 }
 
 func init() {
