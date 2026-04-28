@@ -4,12 +4,21 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 type Config struct {
-	OssConfig OssConfig `json:"oss_config"`
+	OssConfig   OssConfig   `json:"oss_config"`
+	QiniuConfig QiniuConfig `json:"qiniu_config"`
+}
+
+type QiniuConfig struct {
+	AccessKey string `json:"access_key"`
+	SecretKey string `json:"secret_key"`
+	Bucket    string `json:"bucket"`
+	BaseUri   string `json:"base_uri"`
 }
 
 type OssConfig struct {
