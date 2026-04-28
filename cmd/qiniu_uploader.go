@@ -70,10 +70,12 @@ var qiniuUploaderCmd = &cobra.Command{
 			err := client.UploadDirectory(context.Background(), file, &uploader.DirectoryOptions{
 				BucketName: cf.QiniuConfig.Bucket,
 				UpdateObjectName: func(key string) string {
-					fmt.Println(target, key)
 					return strings.Trim(target, "/") + "/" + key
 				},
 				ObjectConcurrency: 16, // 对象上传并发度,
+				BeforeObjectUpload: func(filePath string, info *uploader.ObjectOptions) {
+					fmt.Println(strings.TrimSuffix(cf.QiniuConfig.BaseUri, "/") + "/" + *info.ObjectName)
+				},
 			})
 			if err != nil {
 				fmt.Println(err)
