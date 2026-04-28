@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/limingxinleo/fan/config"
@@ -68,36 +67,17 @@ var qiniuUploaderCmd = &cobra.Command{
 		})
 
 		if stat.IsDir() {
-			if target == "" {
-				fmt.Println(aurora.Yellow("上传目录必须通过 -t 指定上传目录."))
-				os.Exit(1)
-			}
-			var files []string
-			err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
-				files = append(files, path)
-				return nil
+			err := client.UploadDirectory(context.Background(), file, &uploader.DirectoryOptions{
+				BucketName: cf.QiniuConfig.Bucket,
+				UpdateObjectName: func(key string) string {
+					fmt.Println(target, key)
+					return strings.Trim(target, "/") + "/" + key
+				},
+				ObjectConcurrency: 16, // 对象上传并发度,
 			})
-
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
-			}
-
-			for _, s := range files {
-				stat, err = os.Stat(s)
-				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
-
-				if !stat.IsDir() {
-					t := strings.TrimSuffix(target, "/") + strings.Replace(s, file, "", 1)
-					err := uploadToQiniu(client, &cf.QiniuConfig, s, t)
-					if err != nil {
-						fmt.Println(err)
-						os.Exit(1)
-					}
-				}
 			}
 		} else {
 			err := uploadToQiniu(client, &cf.QiniuConfig, file, target)
@@ -110,6 +90,7 @@ var qiniuUploaderCmd = &cobra.Command{
 }
 
 func uploadToQiniu(client *uploader.UploadManager, cf *config.QiniuConfig, file string, target string) error {
+	fmt.Println(cf, file, target)
 	return client.UploadFile(context.Background(), file, &uploader.ObjectOptions{
 		BucketName: cf.Bucket,
 		ObjectName: &target,
