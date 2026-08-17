@@ -8,7 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/limingxinleo/fan/config"
 	"github.com/logrusorgru/aurora"
@@ -58,6 +62,10 @@ var qiniuUploaderCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		if target == "" && !stat.IsDir() {
+			target = generateQiniuTarget(file)
+		}
+
 		mac := credentials.NewCredentials(cf.QiniuConfig.AccessKey, cf.QiniuConfig.SecretKey)
 
 		client := uploader.NewUploadManager(&uploader.UploadManagerOptions{
@@ -67,10 +75,16 @@ var qiniuUploaderCmd = &cobra.Command{
 		})
 
 		if stat.IsDir() {
+			prefix := strings.Trim(target, "/")
+			if prefix == "" {
+				fmt.Println("请使用 -t 输入上传的目标目录")
+				os.Exit(1)
+			}
+
 			err := client.UploadDirectory(context.Background(), file, &uploader.DirectoryOptions{
 				BucketName: cf.QiniuConfig.Bucket,
 				UpdateObjectName: func(key string) string {
-					return strings.Trim(target, "/") + "/" + key
+					return prefix + "/" + key
 				},
 				ObjectConcurrency: 16, // 对象上传并发度,
 				BeforeObjectUpload: func(filePath string, info *uploader.ObjectOptions) {
@@ -91,11 +105,17 @@ var qiniuUploaderCmd = &cobra.Command{
 	},
 }
 
+func generateQiniuTarget(file string) string {
+	ext := strings.TrimPrefix(filepath.Ext(file), ".")
+	return fmt.Sprintf("%s/%s.%s", time.Now().Format("2006/01/02"), uuid.NewString(), ext)
+}
+
 func uploadToQiniu(client *uploader.UploadManager, cf *config.QiniuConfig, file string, target string) error {
 	fmt.Println(cf, file, target)
 	return client.UploadFile(context.Background(), file, &uploader.ObjectOptions{
 		BucketName: cf.Bucket,
 		ObjectName: &target,
+		FileName:   file,
 		CustomVars: map[string]string{
 			"name": "github logo",
 		},
