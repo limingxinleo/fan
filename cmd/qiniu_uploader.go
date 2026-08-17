@@ -101,6 +101,8 @@ var qiniuUploaderCmd = &cobra.Command{
 				fmt.Println(err)
 				os.Exit(1)
 			}
+
+			fmt.Println(strings.TrimSuffix(cf.QiniuConfig.BaseUri, "/") + "/" + target)
 		}
 	},
 }
