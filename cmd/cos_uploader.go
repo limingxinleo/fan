@@ -132,7 +132,7 @@ func generateCosTarget(file string) string {
 }
 
 func newCosClient(cf *config.CosConfig) (*cos.Client, error) {
-	u, err := url.Parse("https://" + cf.Bucket + ".cos." + cf.Region + ".myqcloud.com")
+	u, err := url.Parse(cf.BaseUri)
 	if err != nil {
 		return nil, err
 	}
