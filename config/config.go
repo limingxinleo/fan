@@ -12,6 +12,16 @@ import (
 type Config struct {
 	OssConfig   OssConfig   `json:"oss_config"`
 	QiniuConfig QiniuConfig `json:"qiniu_config"`
+	CosConfig   CosConfig   `json:"cos_config"`
+}
+
+type CosConfig struct {
+	SecretId  string `json:"secret_id"`
+	SecretKey string `json:"secret_key"`
+	Bucket    string `json:"bucket"`
+	Region    string `json:"region"`
+	BaseUri   string `json:"base_uri"`
+	CdnUri    string `json:"cdn_uri"`
 }
 
 type QiniuConfig struct {

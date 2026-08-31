@@ -14,16 +14,21 @@ require (
 	github.com/rodaine/table v1.1.0
 	github.com/shopspring/decimal v1.3.1
 	github.com/spf13/cobra v1.7.0
+	github.com/tencentyun/cos-go-sdk-v5 v0.7.75
 )
 
 require (
 	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/alex-ant/gomath v0.0.0-20160516115720-89013a210a82 // indirect
+	github.com/clbanning/mxj v1.8.4 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
+	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mitchellh/mapstructure v1.4.3 // indirect
+	github.com/mozillazg/go-httpheader v0.2.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
