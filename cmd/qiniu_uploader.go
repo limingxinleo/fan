@@ -19,6 +19,7 @@ import (
 	"github.com/qiniu/go-sdk/v7/storagev2/credentials"
 	"github.com/qiniu/go-sdk/v7/storagev2/http_client"
 	"github.com/qiniu/go-sdk/v7/storagev2/uploader"
+	"github.com/qiniu/go-sdk/v7/storagev2/uptoken"
 	"github.com/spf13/cobra"
 )
 
@@ -68,6 +69,12 @@ var qiniuUploaderCmd = &cobra.Command{
 
 		mac := credentials.NewCredentials(cf.QiniuConfig.AccessKey, cf.QiniuConfig.SecretKey)
 
+		overwrite, err := cmd.Flags().GetBool("overwrite")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
 		client := uploader.NewUploadManager(&uploader.UploadManagerOptions{
 			Options: http_client.Options{
 				Credentials: mac,
@@ -81,7 +88,7 @@ var qiniuUploaderCmd = &cobra.Command{
 				os.Exit(1)
 			}
 
-			err := client.UploadDirectory(context.Background(), file, &uploader.DirectoryOptions{
+			directoryOptions := &uploader.DirectoryOptions{
 				BucketName: cf.QiniuConfig.Bucket,
 				UpdateObjectName: func(key string) string {
 					return prefix + "/" + key
@@ -90,13 +97,24 @@ var qiniuUploaderCmd = &cobra.Command{
 				BeforeObjectUpload: func(filePath string, info *uploader.ObjectOptions) {
 					fmt.Println(strings.TrimSuffix(cf.QiniuConfig.BaseUri, "/") + "/" + *info.ObjectName)
 				},
-			})
+			}
+
+			if overwrite {
+				directoryOptions.UpToken = newOverwriteUpToken(mac, cf.QiniuConfig.Bucket, "")
+			}
+
+			err := client.UploadDirectory(context.Background(), file, directoryOptions)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
 		} else {
-			err := uploadToQiniu(client, &cf.QiniuConfig, file, target)
+			var upToken uptoken.Provider
+			if overwrite {
+				upToken = newOverwriteUpToken(mac, cf.QiniuConfig.Bucket, target)
+			}
+
+			err := uploadToQiniu(client, &cf.QiniuConfig, file, target, upToken)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
@@ -112,12 +130,24 @@ func generateQiniuTarget(file string) string {
 	return fmt.Sprintf("%s/%s.%s", time.Now().Format("2006/01/02"), uuid.NewString(), ext)
 }
 
-func uploadToQiniu(client *uploader.UploadManager, cf *config.QiniuConfig, file string, target string) error {
+// newOverwriteUpToken 构造允许覆盖同名对象的上传凭证(insertOnly=0)
+// key 非空时 scope 为 "bucket:key"(官方推荐的覆盖姿势),为空时 scope 为 "bucket"(用于目录上传)
+func newOverwriteUpToken(mac *credentials.Credentials, bucket string, key string) uptoken.Provider {
+	putPolicy, err := uptoken.NewPutPolicyWithKey(bucket, key, time.Now().Add(time.Hour))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	return uptoken.NewSigner(putPolicy.SetInsertOnly(0), mac)
+}
+
+func uploadToQiniu(client *uploader.UploadManager, cf *config.QiniuConfig, file string, target string, upToken uptoken.Provider) error {
 	fmt.Println(cf, file, target)
 	return client.UploadFile(context.Background(), file, &uploader.ObjectOptions{
 		BucketName: cf.Bucket,
 		ObjectName: &target,
 		FileName:   file,
+		UpToken:    upToken, // 为 nil 时走 SDK 默认凭证,行为与现状完全一致
 		CustomVars: map[string]string{
 			"name": "github logo",
 		},
@@ -129,4 +159,5 @@ func init() {
 
 	qiniuUploaderCmd.Flags().StringP("target", "t", "", "上传路径")
 	qiniuUploaderCmd.Flags().StringP("bucket", "b", "", "Qiniu Bucket")
+	qiniuUploaderCmd.Flags().BoolP("overwrite", "f", false, "允许覆盖空间内已存在的同名对象")
 }
