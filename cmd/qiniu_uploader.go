@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -88,22 +90,12 @@ var qiniuUploaderCmd = &cobra.Command{
 				os.Exit(1)
 			}
 
-			directoryOptions := &uploader.DirectoryOptions{
-				BucketName: cf.QiniuConfig.Bucket,
-				UpdateObjectName: func(key string) string {
-					return prefix + "/" + key
-				},
-				ObjectConcurrency: 16, // 对象上传并发度,
-				BeforeObjectUpload: func(filePath string, info *uploader.ObjectOptions) {
-					fmt.Println(strings.TrimSuffix(cf.QiniuConfig.BaseUri, "/") + "/" + *info.ObjectName)
-				},
-			}
-
+			var upToken uptoken.Provider
 			if overwrite {
-				directoryOptions.UpToken = newOverwriteUpToken(mac, cf.QiniuConfig.Bucket, "")
+				upToken = newOverwriteUpToken(mac, cf.QiniuConfig.Bucket, "")
 			}
 
-			err := client.UploadDirectory(context.Background(), file, directoryOptions)
+			err := uploadDirectoryToQiniu(client, &cf.QiniuConfig, file, prefix, upToken)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
@@ -139,6 +131,77 @@ func newOverwriteUpToken(mac *credentials.Credentials, bucket string, key string
 		os.Exit(1)
 	}
 	return uptoken.NewSigner(putPolicy.SetInsertOnly(0), mac)
+}
+
+// qiniuDirectoryConcurrency 目录上传时的对象并发度
+const qiniuDirectoryConcurrency = 16
+
+// uploadDirectoryToQiniu 并发上传目录下的所有文件
+// 单个对象上传失败不会中断其他对象的上传,所有对象处理完毕后统一返回失败信息
+func uploadDirectoryToQiniu(client *uploader.UploadManager, cf *config.QiniuConfig, dir string, prefix string, upToken uptoken.Provider) error {
+	var (
+		mutex  sync.Mutex
+		failed []string
+		wg     sync.WaitGroup
+	)
+
+	semaphore := make(chan struct{}, qiniuDirectoryConcurrency)
+	walkErr := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+
+		objectName := prefix + "/" + filepath.ToSlash(rel)
+		fmt.Println(strings.TrimSuffix(cf.BaseUri, "/") + "/" + objectName)
+
+		wg.Add(1)
+		semaphore <- struct{}{}
+		go func(path string, objectName string) {
+			defer wg.Done()
+			defer func() { <-semaphore }()
+
+			err := client.UploadFile(context.Background(), path, &uploader.ObjectOptions{
+				BucketName: cf.Bucket,
+				ObjectName: &objectName,
+				FileName:   filepath.Base(path),
+				UpToken:    upToken, // 为 nil 时走 SDK 默认凭证,行为与现状完全一致
+			}, nil)
+			if err != nil {
+				mutex.Lock()
+				failed = append(failed, fmt.Sprintf("%s: %v", objectName, err))
+				mutex.Unlock()
+			}
+		}(path, objectName)
+
+		return nil
+	})
+
+	wg.Wait()
+
+	var messages []string
+	if walkErr != nil {
+		messages = append(messages, walkErr.Error())
+	}
+
+	if len(failed) > 0 {
+		sort.Strings(failed)
+		messages = append(messages, fmt.Sprintf("%d 个对象上传失败:\n%s", len(failed), strings.Join(failed, "\n")))
+	}
+
+	if len(messages) > 0 {
+		return errors.New(strings.Join(messages, "\n"))
+	}
+
+	return nil
 }
 
 func uploadToQiniu(client *uploader.UploadManager, cf *config.QiniuConfig, file string, target string, upToken uptoken.Provider) error {
